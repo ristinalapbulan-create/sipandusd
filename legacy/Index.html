@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Si-PANDU SD - Sistem Pelaporan & Arsip Digital Unggulan</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f1f5f9;
+            /* Slate 100 */
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+
+    <script>
+        // --- TAILWIND CONFIG ---
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa',
+                            500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a',
+                        },
+                        secondary: { // Teal
+                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf',
+                            500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <!-- React Application -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, Fragment } = React;
+        const {
+            LayoutDashboard, FileText, CheckCircle, Clock, Users, LogOut,
+            Menu, X, UploadCloud, PieChart, ShieldCheck, Search, Filter,
+            MoreHorizontal, Edit, Trash2, RotateCcw, Lock, ChevronRight,
+            Building2, UserCheck, AlertCircle, FileCheck
+        } = lucide;
+
+        // --- MOCK API FOR LOCAL DEV ---
+        const isLocal = typeof google === 'undefined';
+
+        const mockState = {
+            schools: [
+                { id: '1', npsn: '10001', password: 'admin', name: 'SDN 1 Tanjung', address: 'Kec. Tanjung' },
+                { id: '2', npsn: '10002', password: 'admin', name: 'SDN 2 Mabuun', address: 'Kec. Murung Pudak' }
+            ],
+            reports: [
+                { id: '101', npsn: '10001', school_name: 'SDN 1 Tanjung', month: 'Januari', year: '2025', type: 'Laporan Bulanan', link: 'http://drive.google.com', status: 'approved', date: '2025-01-28', notes: '' },
+                { id: '102', npsn: '10002', school_name: 'SDN 2 Mabuun', month: 'Januari', year: '2025', type: 'Laporan Bulanan', link: 'http://drive.google.com', status: 'pending', date: '2025-01-29', notes: '' }
+            ],
+            admins: [
+                { username: 'admin', password: 'admin123', name: 'Super Admin' }
+            ]
+        };
+
+        const api = {
+            getInitialData: () => {
+                if (isLocal) {
+                    console.log('Mock: getInitialData');
+                    return Promise.resolve({ ...mockState });
+                }
+                return new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getInitialData();
+                });
+            },
+            submitReport: (data) => {
+                if (isLocal) {
+                    console.log('Mock: submitReport', data);
+                    const newReport = { ...data, id: Date.now().toString(), status: 'pending', date: new Date().toISOString().split('T')[0], notes: '' };
+                    mockState.reports.push(newReport);
+                    return Promise.resolve({ reports: [...mockState.reports] });
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).submitReport(data));
+            },
+            updateReportStatus: (id, status, notes) => {
+                if (isLocal) {
+                    console.log('Mock: updateStatus', id, status);
+                    const idx = mockState.reports.findIndex(r => r.id === id);
+                    if (idx !== -1) {
+                        mockState.reports[idx].status = status;
+                        if (notes) mockState.reports[idx].notes = notes;
+                    }
+                    return Promise.resolve({ reports: [...mockState.reports] });
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).updateReportStatus(id, status, notes));
+            },
+            saveSchoolData: (data) => {
+                if (isLocal) {
+                    console.log("Mock saveSchool", data);
+                    if (data.id) {
+                        const idx = mockState.schools.findIndex(s => s.id === data.id);
+                        if (idx !== -1) mockState.schools[idx] = { ...mockState.schools[idx], ...data };
+                    } else {
+                        mockState.schools.push({ ...data, id: Date.now().toString(), password: 'admin' });
+                    }
+                    return Promise.resolve({ schools: [...mockState.schools] });
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).saveSchoolData(data));
+            },
+            deleteSchool: (id) => {
+                if (isLocal) {
+                    mockState.schools = mockState.schools.filter(s => s.id !== id);
+                    return Promise.resolve({ schools: [...mockState.schools] });
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).deleteSchool(id));
+            },
+            resetSchoolPassword: (id) => {
+                if (isLocal) {
+                    const idx = mockState.schools.findIndex(s => s.id === id);
+                    if (idx !== -1) mockState.schools[idx].password = 'admin';
+                    return Promise.resolve({ schools: [...mockState.schools] });
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).resetSchoolPassword(id));
+            },
+            changePassword: (userType, id, newPassword) => {
+                if (isLocal) {
+                    console.log('Mock changePassword', userType, id);
+                    return Promise.resolve({ success: true }); // Simplification for mock
+                }
+                return new Promise(resolve => google.script.run.withSuccessHandler(resolve).changePassword(userType, id, newPassword));
+            }
+        };
+
+        // --- COMPONENTS ---
+
+        // 1. UI Components
+        const Card = ({ children, className = '' }) => (
+            <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
+                {children}
+            </div>
+        );
+
+        const Button = ({ children, onClick, variant = 'primary', className = '', type = 'button', disabled = false }) => {
+            const base = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2";
+            const variants = {
+                primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100 disabled:opacity-50",
+                secondary: "bg-teal-500 text-white hover:bg-teal-600 shadow-md shadow-teal-100 disabled:opacity-50",
+                danger: "bg-red-500 text-white hover:bg-red-600 shadow-md shadow-red-100 disabled:opacity-50",
+                outline: "border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50",
+                ghost: "text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+            };
+            return (
+                <button type={type} onClick={onClick} className={`${base} ${variants[variant]} ${className}`} disabled={disabled}>
+                    {children}
+                </button>
+            );
+        };
+
+        const Badge = ({ status }) => {
+            const styles = {
+                approved: 'bg-teal-100 text-teal-700 border-teal-200',
+                pending: 'bg-amber-100 text-amber-700 border-amber-200',
+                rejected: 'bg-red-100 text-red-700 border-red-200'
+            };
+            const labels = {
+                approved: 'Diterima',
+                pending: 'Menunggu',
+                rejected: 'Ditolak'
+            };
+
+            return (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || 'bg-gray-100 text-gray-600'}`}>
+                    {labels[status] || status}
+                </span>
+            );
+        };
+
+        // 2. Main App Component
+        const App = () => {
+            // Global State
+            const [schools, setSchools] = useState([]);
+            const [reports, setReports] = useState([]);
+            const [user, setUser] = useState(null); // { role: 'admin' | 'school', data: obj }
+            const [loading, setLoading] = useState(true);
+            const [currentView, setCurrentView] = useState('landing'); // landing, dashboard
+
+            // Load Initial Data
+            useEffect(() => {
+                api.getInitialData()
+                    .then(data => {
+                        setSchools(data.schools);
+                        setReports(data.reports);
+
+                        // Auto login for dev checks if needed, but keeping it secure by default
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Failed to load data", err);
+                        setLoading(false);
+                    });
+            }, []);
+
+            // Icons must be created after Lucide is loaded - using the destructured ones
+
+            const handleLogin = (role, userData) => {
+                setUser({ role, data: userData });
+                setCurrentView('dashboard');
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                setCurrentView('landing');
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-slate-500 font-medium">Memuat Si-PANDU SD...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col text-slate-800">
+                    {/* Header */}
+                    <Header user={user} onLogout={handleLogout} />
+
+                    {/* Main Content */}
+                    <main className="flex-1">
+                        {currentView === 'landing' && (
+                            <LandingPage
+                                schools={schools}
+                                reports={reports}
+                                onLoginSuccess={handleLogin}
+                            />
+                        )}
+
+                        {currentView === 'dashboard' && user?.role === 'admin' && (
+                            <AdminDashboard
+                                user={user}
+                                schools={schools}
+                                reports={reports}
+                                setSchools={setSchools}
+                                setReports={setReports}
+                                api={api}
+                            />
+                        )}
+
+                        {currentView === 'dashboard' && user?.role === 'school' && (
+                            <SchoolDashboard
+                                user={user}
+                                reports={reports}
+                                setReports={setReports}
+                                api={api}
+                            />
+                        )}
+                    </main>
+
+                    {/* Footer */}
+                    <Footer />
+                </div>
+            );
+        };
+
+        // Header Component
+        const Header = ({ user, onLogout }) => {
+            return (
+                <header className="bg-white border-b border-slate-200 sticky top-0 z-50 glass-effect">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Lambang_Kabupaten_Tabalong.png/800px-Lambang_Kabupaten_Tabalong.png" alt="Logo Tabalong" className="h-10 w-auto" />
+                            <div className="hidden md:block w-px h-8 bg-slate-300 mx-1"></div>
+                            <div className="flex flex-col">
+                                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-teal-600">
+                                    Si-PANDU SD
+                                </span>
+                                <span className="text-xs text-slate-500 font-medium tracking-wide">
+                                    DINAS PENDIDIKAN TABALONG
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            {user ? (
+                                <div className="flex items-center gap-4">
+                                    <div className="text-right hidden sm:block">
+                                        <p className="text-sm font-semibold text-slate-800">{user.data.name}</p>
+                                        <p className="text-xs text-slate-500 capitalize">{user.role}</p>
+                                    </div>
+                                    <Button variant="outline" onClick={onLogout} className="!px-3 !py-1.5 text-xs">
+                                        <LogOut size={16} />
+                                        Keluar
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="text-sm text-slate-500 italic hidden sm:block">
+                                    Sistem Pelaporan & Arsip Digital
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </header>
+            );
+        }
+
+        // Footer Component
+        const Footer = () => {
+            return (
+                <footer className="bg-slate-900 text-slate-300 py-8 mt-auto">
+                    <div className="max-w-7xl mx-auto px-4 text-center">
+                        <p className="font-semibold text-white mb-2">Bidang Pendidikan SD - Disdikbud Tabalong</p>
+                        <p className="text-sm text-slate-400">&copy; {new Date().getFullYear()} Si-PANDU SD. All rights reserved.</p>
+                        <p className="text-xs text-slate-500 mt-4">"Tabalong Smart, Pendidikan Unggul"</p>
+                    </div>
+                </footer>
+            )
+        }
+
+        // -- PLACEHOLDER COMPONENTS (Will be filled in subsequent steps) --
+
+        // Login Modal & Landing Page
+        const LandingPage = ({ schools, reports, onLoginSuccess }) => {
+            const [showLogin, setShowLogin] = useState(false);
+            const [loginType, setLoginType] = useState('school'); // 'school' or 'admin'
+            const [credentials, setCredentials] = useState({ username: '', password: '' });
+            const [error, setError] = useState('');
+
+            const totalSchools = schools.length;
+            const totalReports = reports.length;
+            // Compliance: schools that have submitted at least one approved report this year
+            const currentYear = new Date().getFullYear().toString();
+            const activeSchools = new Set(reports.filter(r => r.year === currentYear && r.status === 'approved').map(r => r.npsn)).size;
+            const complianceRate = totalSchools > 0 ? Math.round((activeSchools / totalSchools) * 100) : 0;
+
+            const handleAuth = (e) => {
+                e.preventDefault();
+                setError('');
+
+                // Mock Auth Logic
+                if (loginType === 'admin') {
+                    // Hardcoded or fetched admin check
+                    // In real app, check against admins array passed to LandingPage or fetched
+                    // For now, assuming mock 'admin' 'admin123'
+                    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+                        onLoginSuccess('admin', { name: 'Super Admin', username: 'admin' });
+                    } else {
+                        setError('Username atau password admin salah.');
+                    }
+                } else {
+                    const school = schools.find(s => s.npsn === credentials.username && s.password === credentials.password);
+                    if (school) {
+                        onLoginSuccess('school', school);
+                    } else {
+                        setError('NPSN atau password salah.');
+                    }
+                }
+            };
+
+            return (
+                <div>
+                    {/* Hero Section */}
+                    <section className="relative bg-gradient-to-br from-blue-700 to-teal-600 text-white py-20 overflow-hidden">
+                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Lambang_Kabupaten_Tabalong.png/800px-Lambang_Kabupaten_Tabalong.png" alt="Logo" className="h-24 mx-auto mb-6 drop-shadow-lg" />
+                            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                                Si-PANDU SD
+                            </h1>
+                            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-2xl mx-auto font-light">
+                                Sistem Pelaporan & Arsip Digital Unggulan Sekolah Dasar Kabupaten Tabalong
+                            </p>
+                            <Button variant="secondary" onClick={() => setShowLogin(true)} className="mx-auto !text-lg !px-8 !py-3 !rounded-full shadow-xl hover:scale-105 transition-transform">
+                                Masuk Aplikasi
+                            </Button>
+                        </div>
+                    </section>
+
+                    {/* Dashboard Stats */}
+                    <section className="max-w-7xl mx-auto px-4 -mt-10 relative z-20 pb-16">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className="p-6 flex items-center gap-4 shadow-lg border-b-4 border-blue-500">
+                                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <Building2 size={32} />
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-sm font-medium">Total Sekolah</p>
+                                    <p className="text-3xl font-bold text-slate-800">{totalSchools}</p>
+                                </div>
+                            </Card>
+                            <Card className="p-6 flex items-center gap-4 shadow-lg border-b-4 border-teal-500">
+                                <div className="p-3 rounded-full bg-teal-100 text-teal-600">
+                                    <FileCheck size={32} />
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-sm font-medium">Laporan Diterima</p>
+                                    <p className="text-3xl font-bold text-slate-800">{totalReports}</p>
+                                </div>
+                            </Card>
+                            <Card className="p-6 flex items-center gap-4 shadow-lg border-b-4 border-indigo-500">
+                                <div className="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                                    <PieChart size={32} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-slate-500 text-sm font-medium mb-1">Kepatuhan Tahun Ini</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 h-3 bg-indigo-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${complianceRate}%` }}></div>
+                                        </div>
+                                        <span className="text-lg font-bold text-indigo-700">{complianceRate}%</span>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+
+                        {/* Progress per Kecamatan (Placeholder for now) */}
+                        <div className="mt-12">
+                            <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <Users size={24} className="text-blue-600" />
+                                Progres Pelaporan per Kecamatan
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* Simple Logic to group by kec */}
+                                {['Kec. Tanjung', 'Kec. Murung Pudak', 'Kec. Tanta', 'Kec. Kelua'].map(kec => (
+                                    <Card key={kec} className="p-4 hover:shadow-md transition-shadow">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-semibold text-slate-700">{kec}</span>
+                                            <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">85%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-teal-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Login Modal */}
+                    {showLogin && (
+                        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+                                <div className="bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
+                                    <h3 className="font-bold text-lg text-slate-800">Masuk Aplikasi</h3>
+                                    <button onClick={() => setShowLogin(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                                </div>
+                                <div className="p-6">
+                                    {/* Role Switcher */}
+                                    <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
+                                        <button
+                                            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${loginType === 'school' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setLoginType('school')}
+                                        >
+                                            Operator Sekolah
+                                        </button>
+                                        <button
+                                            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${loginType === 'admin' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setLoginType('admin')}
+                                        >
+                                            Admin Dinas
+                                        </button>
+                                    </div>
+
+                                    <form onSubmit={handleAuth} className="space-y-4">
+                                        {error && (
+                                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
+                                                <AlertCircle size={16} /> {error}
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                {loginType === 'school' ? 'NPSN' : 'Username'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                placeholder={loginType === 'school' ? 'Contoh: 10002030' : 'Masukkan username'}
+                                                value={credentials.username}
+                                                onChange={e => setCredentials({ ...credentials, username: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                                            <input
+                                                type="password"
+                                                required
+                                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                placeholder="••••••••"
+                                                value={credentials.password}
+                                                onChange={e => setCredentials({ ...credentials, password: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <Button type="submit" className="w-full !py-2.5 !text-base mt-2">
+                                            Masuk Sekarang
+                                        </Button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- ADMIN DASHBOARD ---
+
+        // Sub-components for Admin
+        const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+            <button
+                onClick={onClick}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+                <Icon size={20} />
+                <span>{label}</span>
+            </button>
+        );
+
+        const AdminDashboard = ({ user, schools, reports, setSchools, setReports, api }) => {
+            const [view, setView] = useState('monitoring'); // monitoring, verification, archive, schools
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+            return (
+                <div className="flex min-h-[calc(100vh-80px)] bg-slate-50">
+                    {/* Sidebar */}
+                    <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col sticky top-20 h-[calc(100vh-80px)] overflow-y-auto`}>
+                        <div className="p-4 flex justify-end">
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 text-slate-400 hover:text-blue-600">
+                                <Menu size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 px-3 space-y-2">
+                            <SidebarItem
+                                icon={LayoutDashboard}
+                                label={isSidebarOpen ? "Monitoring" : ""}
+                                active={view === 'monitoring'}
+                                onClick={() => setView('monitoring')}
+                            />
+                            <SidebarItem
+                                icon={CheckCircle}
+                                label={isSidebarOpen ? "Verifikasi Laporan" : ""}
+                                active={view === 'verification'}
+                                onClick={() => setView('verification')}
+                            />
+                            <SidebarItem
+                                icon={FileText}
+                                label={isSidebarOpen ? "Arsip Digital" : ""}
+                                active={view === 'archive'}
+                                onClick={() => setView('archive')}
+                            />
+                            <SidebarItem
+                                icon={Building2}
+                                label={isSidebarOpen ? "Data Sekolah" : ""}
+                                active={view === 'schools'}
+                                onClick={() => setView('schools')}
+                            />
+                        </div>
+                    </aside>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 p-6 overflow-x-hidden">
+                        {view === 'monitoring' && <AdminMonitoring reports={reports} schools={schools} />}
+                        {view === 'verification' && <AdminVerification reports={reports} api={api} />}
+                        {view === 'archive' && <AdminArchive reports={reports} />}
+                        {view === 'schools' && <AdminSchools schools={schools} api={api} />}
+                    </main>
+                </div>
+            );
+        }
+
+        // 1. Admin Monitoring View
+        const AdminMonitoring = ({ reports, schools }) => {
+            // Stats Calculation
+            const totalReports = reports.length;
+            const pending = reports.filter(r => r.status === 'pending').length;
+            const approved = reports.filter(r => r.status === 'approved').length;
+
+            // Compliance Calculation per Kecamatan (Mock logic, real app would group schools by address)
+            const kecamatans = [...new Set(schools.map(s => s.address || 'Lainnya'))];
+            const complianceData = kecamatans.map(kec => {
+                const schoolsInKec = schools.filter(s => s.address === kec);
+                const reportCount = reports.filter(r => schoolsInKec.some(s => s.npsn === r.npsn) && r.status === 'approved').length;
+                // Simplified compliance: report count as dummy percentage for visual
+                const percentage = Math.min(100, Math.round((reportCount / (schoolsInKec.length || 1)) * 10) * 10);
+                return { name: kec, percentage };
+            });
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800">Dashboard Monitoring</h2>
+
+                    {/* Stat Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="p-6 border-l-4 border-blue-500">
+                            <p className="text-slate-500 text-sm">Total Laporan Masuk</p>
+                            <p className="text-3xl font-bold text-slate-800">{totalReports}</p>
+                        </Card>
+                        <Card className="p-6 border-l-4 border-amber-500">
+                            <p className="text-slate-500 text-sm">Menunggu Verifikasi</p>
+                            <p className="text-3xl font-bold text-amber-600">{pending}</p>
+                        </Card>
+                        <Card className="p-6 border-l-4 border-teal-500">
+                            <p className="text-slate-500 text-sm">Laporan Disetujui</p>
+                            <p className="text-3xl font-bold text-teal-600">{approved}</p>
+                        </Card>
+                    </div>
+
+                    {/* Charts / Progress */}
+                    <Card className="p-6">
+                        <h3 className="font-semibold text-lg mb-4">Kepatuhan per Kecamatan</h3>
+                        <div className="space-y-4">
+                            {complianceData.map((d, i) => (
+                                <div key={i}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="font-medium text-slate-700">{d.name}</span>
+                                        <span className="text-slate-500">{d.percentage}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-2.5">
+                                        <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${d.percentage}%` }}></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            );
+        }
+
+        // 2. Admin Verification View
+        const AdminVerification = ({ reports, api }) => {
+            const [pendingReports, setPendingReports] = useState([]);
+            const [processing, setProcessing] = useState(null); // id being processed
+            const [rejectNote, setRejectNote] = useState('');
+            const [rejectId, setRejectId] = useState(null); // id of report being rejected (show modal)
+
+            useEffect(() => {
+                setPendingReports(reports.filter(r => r.status === 'pending'));
+            }, [reports]);
+
+            const handleApprove = async (id) => {
+                setProcessing(id);
+                try {
+                    await api.updateReportStatus(id, 'approved', '');
+                    // Note: In real app, api returns updated reports list which triggers App state update via props, 
+                    // but here we might need to rely on parent state update. 
+                    // For simplicity, we assume parent updates 'reports' prop or we refresh.
+                    // ideally, api.updateReportStatus should update the global state in App component.
+                    // Since props are passed down, we need to lift the state update.
+                    // But for now, let's just simulate the UI update locally? 
+                    // NO, we passed 'setReports' to AdminDashboard, but not to here directly.
+                    // Wait, AdminDashboard didn't pass "setReports" to AdminVerification originally.
+                    // I will assume for this "single file" structure, I need to trigger a global refresh or context.
+                    // Actually, I should update the 'api' calls in 'App' to update the state automatically?
+                    // The 'api' helpers in 'App' return the new list, so we should chain it there?
+                    // Refactoring: Let's assume we reload the whole page or trigger parent refresh.
+                    // BETTER: Reload data.
+                    window.location.reload(); // Simple refresh for now or implement better state sync
+                } catch (e) {
+                    alert('Gagal memproses');
+                } finally {
+                    setProcessing(null);
+                }
+            };
+
+            const handleRejectSubmit = async () => {
+                if (!rejectNote) return alert("Catatan wajib diisi");
+                setProcessing(rejectId);
+                try {
+                    await api.updateReportStatus(rejectId, 'rejected', rejectNote);
+                    setRejectId(null);
+                    setRejectNote('');
+                    window.location.reload();
+                } catch (e) {
+                    alert('Gagal menolak');
+                } finally {
+                    setProcessing(null);
+                }
+            }
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800">Verifikasi Laporan</h2>
+
+                    {pendingReports.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+                            <CheckCircle size={48} className="mx-auto text-slate-300 mb-4" />
+                            <p className="text-slate-500">Tidak ada laporan yang perlu diverifikasi.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {pendingReports.map(report => (
+                                <Card key={report.id} className="p-5 flex flex-col gap-3 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-3 opacity-10">
+                                        <FileText size={64} />
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                            {report.month} {report.year}
+                                        </span>
+                                        <h3 className="font-bold text-slate-800 mt-2 text-lg line-clamp-1">{report.school_name}</h3>
+                                        <p className="text-slate-500 text-sm">NPSN: {report.npsn}</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 rounded-lg p-3 text-sm flex items-center gap-2 text-slate-600">
+                                        <Clock size={16} />
+                                        <span>Dikirim: {report.date}</span>
+                                    </div>
+
+                                    <a href={report.link} target="_blank" className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-1 mb-2">
+                                        <FileText size={16} /> Lihat Dokumen
+                                    </a>
+
+                                    <div className="mt-auto grid grid-cols-2 gap-3 pt-2">
+                                        <Button
+                                            variant="outline"
+                                            className="!w-full !text-red-500 border-red-200 hover:bg-red-50"
+                                            onClick={() => setRejectId(report.id)}
+                                            disabled={processing === report.id}
+                                        >
+                                            Tolak
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            className="!w-full"
+                                            onClick={() => handleApprove(report.id)}
+                                            disabled={processing === report.id}
+                                        >
+                                            {processing === report.id ? '...' : 'Terima'}
+                                        </Button>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Reject Modal */}
+                    {rejectId && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg max-w-sm w-full p-6 space-y-4">
+                                <h3 className="font-bold text-lg">Tolak Laporan</h3>
+                                <p className="text-sm text-slate-500">Berikan alasan penolakan agar sekolah dapat memperbaiki laporan.</p>
+                                <textarea
+                                    className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none"
+                                    rows="3"
+                                    placeholder="Contoh: Link tidak bisa dibuka, atau dokumen kurang lengkap."
+                                    value={rejectNote}
+                                    onChange={e => setRejectNote(e.target.value)}
+                                ></textarea>
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" onClick={() => setRejectId(null)}>Batal</Button>
+                                    <Button variant="danger" onClick={handleRejectSubmit}>Kirim Penolakan</Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 3. Admin Archive View
+        const AdminArchive = ({ reports }) => {
+            const [search, setSearch] = useState('');
+            const approvedReports = reports.filter(r => r.status === 'approved');
+            const filtered = approvedReports.filter(r =>
+                r.school_name.toLowerCase().includes(search.toLowerCase()) ||
+                r.npsn.includes(search)
+            );
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-slate-800">Arsip Digital</h2>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Cari sekolah atau NPSN..."
+                                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-4">Sekolah</th>
+                                    <th className="px-6 py-4">Periode</th>
+                                    <th className="px-6 py-4">Tanggal Upload</th>
+                                    <th className="px-6 py-4">Link</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filtered.length > 0 ? filtered.map(item => (
+                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="font-semibold text-slate-800">{item.school_name}</p>
+                                            <p className="text-xs text-slate-500">{item.npsn}</p>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium">{item.month} {item.year}</td>
+                                        <td className="px-6 py-4 text-slate-600">{item.date}</td>
+                                        <td className="px-6 py-4">
+                                            <a href={item.link} target="_blank" className="text-blue-600 hover:underline flex items-center gap-1">
+                                                <FileText size={14} /> Buka
+                                            </a>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <Badge status={item.status} />
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-slate-400">Data tidak ditemukan</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // 4. Admin Schools Management View
+        const AdminSchools = ({ schools, api }) => {
+            const [showModal, setShowModal] = useState(false);
+            const [editing, setEditing] = useState(null);
+            const [formData, setFormData] = useState({ npsn: '', name: '', address: '' });
+            const [loading, setLoading] = useState(false);
+
+            const handleEdit = (school) => {
+                setEditing(school);
+                setFormData({ npsn: school.npsn, name: school.name, address: school.address });
+                setShowModal(true);
+            }
+
+            const handleAdd = () => {
+                setEditing(null);
+                setFormData({ npsn: '', name: '', address: '' });
+                setShowModal(true);
+            }
+
+            const handleSave = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                    const payload = { ...formData, id: editing ? editing.id : undefined };
+                    await api.saveSchoolData(payload);
+                    setShowModal(false);
+                    window.location.reload();
+                } catch (e) {
+                    alert("Gagal menyimpan data");
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            const handleDelete = async (id) => {
+                if (!confirm("Yakin ingin menghapus data sekolah ini?")) return;
+                try {
+                    await api.deleteSchool(id);
+                    window.location.reload();
+                } catch (e) {
+                    alert("Gagal menghapus");
+                }
+            }
+
+            const handleResetPassword = async (id) => {
+                if (!confirm("Reset password ke default 'admin'?")) return;
+                try {
+                    await api.resetSchoolPassword(id);
+                    alert("Password berhasil direset!");
+                } catch (e) {
+                    alert("Gagal reset password");
+                }
+            }
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-slate-800">Manajemen Sekolah</h2>
+                        <Button onClick={handleAdd}>+ Tambah Sekolah</Button>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-4">NPSN</th>
+                                    <th className="px-6 py-4">Nama Sekolah</th>
+                                    <th className="px-6 py-4">Kecamatan</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {schools.map(school => (
+                                    <tr key={school.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-4 font-mono text-slate-600">{school.npsn}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-800">{school.name}</td>
+                                        <td className="px-6 py-4 text-slate-600">{school.address}</td>
+                                        <td className="px-6 py-4 flex justify-center gap-2">
+                                            <button onClick={() => handleEdit(school)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16} /></button>
+                                            <button onClick={() => handleResetPassword(school.id)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Reset Password"><Lock size={16} /></button>
+                                            <button onClick={() => handleDelete(school.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Modal Form */}
+                    {showModal && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl max-w-md w-full p-6">
+                                <h3 className="font-bold text-l mb-4">{editing ? 'Edit Sekolah' : 'Tambah Sekolah'}</h3>
+                                <form onSubmit={handleSave} className="space-y-3">
+                                    <div>
+                                        <label className="text-sm font-medium">NPSN</label>
+                                        <input className="w-full border rounded-lg px-3 py-2" value={formData.npsn} onChange={e => setFormData({ ...formData, npsn: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium">Nama Sekolah</label>
+                                        <input className="w-full border rounded-lg px-3 py-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium">Alamat (Kecamatan)</label>
+                                        <select className="w-full border rounded-lg px-3 py-2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} required>
+                                            <option value="">Pilih Kecamatan</option>
+                                            <option value="Kec. Tanjung">Kec. Tanjung</option>
+                                            <option value="Kec. Murung Pudak">Kec. Murung Pudak</option>
+                                            <option value="Kec. Tanta">Kec. Tanta</option>
+                                            <option value="Kec. Kelua">Kec. Kelua</option>
+                                            <option value="Kec. Haruai">Kec. Haruai</option>
+                                            <option value="Kec. Pugaan">Kec. Pugaan</option>
+                                            <option value="Kec. Banua Lawas">Kec. Banua Lawas</option>
+                                            <option value="Kec. Muara Harus">Kec. Muara Harus</option>
+                                            <option value="Kec. Jaro">Kec. Jaro</option>
+                                            <option value="Kec. Upau">Kec. Upau</option>
+                                            <option value="Kec. Bintang Ara">Kec. Bintang Ara</option>
+                                            <option value="Kec. Muara Uya">Kec. Muara Uya</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <Button variant="ghost" onClick={() => setShowModal(false)}>Batal</Button>
+                                        <Button variant="primary" type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan'}</Button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )
+        }
+
+        // --- SCHOOL DASHBOARD ---
+
+        // Sub-components for School
+        const SchoolDashboard = ({ user, reports, setReports, api }) => {
+            const [view, setView] = useState('dashboard'); // dashboard, submit, history, profile
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+            const myReports = reports.filter(r => r.npsn === user.data.npsn);
+
+            return (
+                <div className="flex min-h-[calc(100vh-80px)] bg-slate-50">
+                    {/* Sidebar */}
+                    <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col sticky top-20 h-[calc(100vh-80px)]`}>
+                        <div className="p-4 flex justify-end">
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 text-slate-400 hover:text-blue-600">
+                                <Menu size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 px-3 space-y-2">
+                            <SidebarItem
+                                icon={LayoutDashboard}
+                                label={isSidebarOpen ? "Dashboard" : ""}
+                                active={view === 'dashboard'}
+                                onClick={() => setView('dashboard')}
+                            />
+                            <SidebarItem
+                                icon={UploadCloud}
+                                label={isSidebarOpen ? "Kirim Laporan" : ""}
+                                active={view === 'submit'}
+                                onClick={() => setView('submit')}
+                            />
+                            <SidebarItem
+                                icon={Clock}
+                                label={isSidebarOpen ? "Riwayat Laporan" : ""}
+                                active={view === 'history'}
+                                onClick={() => setView('history')}
+                            />
+                            <SidebarItem
+                                icon={ShieldCheck}
+                                label={isSidebarOpen ? "Profil Sekolah" : ""}
+                                active={view === 'profile'}
+                                onClick={() => setView('profile')}
+                            />
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-6 overflow-x-hidden">
+                        {view === 'dashboard' && <SchoolStats myReports={myReports} user={user} setView={setView} />}
+                        {view === 'submit' && <SchoolSubmitForm user={user} api={api} setView={setView} />}
+                        {view === 'history' && <SchoolHistory myReports={myReports} />}
+                        {view === 'profile' && <SchoolProfile user={user} api={api} />}
+                    </main>
+                </div>
+            );
+        }
+
+        // 1. School Stats
+        const SchoolStats = ({ myReports, user, setView }) => {
+            const pending = myReports.filter(r => r.status === 'pending').length;
+            const approved = myReports.filter(r => r.status === 'approved').length;
+            const rejected = myReports.filter(r => r.status === 'rejected').length;
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h2 className="text-3xl font-bold mb-2">Selamat Datang, Operator!</h2>
+                            <p className="text-blue-100 text-lg mb-6">{user.data.name}</p>
+                            <Button variant="secondary" onClick={() => setView('submit')} className="shadow-lg">
+                                <UploadCloud size={20} /> Kirim Laporan Baru
+                            </Button>
+                        </div>
+                        <div className="absolute right-0 bottom-0 opacity-10">
+                            <Building2 size={200} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="p-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-100 text-amber-600 rounded-full"><Clock size={24} /></div>
+                                <div>
+                                    <p className="text-slate-500 text-sm">Sedang Diproses</p>
+                                    <p className="text-2xl font-bold text-slate-800">{pending}</p>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-teal-100 text-teal-600 rounded-full"><CheckCircle size={24} /></div>
+                                <div>
+                                    <p className="text-slate-500 text-sm">Diterima</p>
+                                    <p className="text-2xl font-bold text-slate-800">{approved}</p>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-red-100 text-red-600 rounded-full"><AlertCircle size={24} /></div>
+                                <div>
+                                    <p className="text-slate-500 text-sm">Perlu Revisi</p>
+                                    <p className="text-2xl font-bold text-slate-800">{rejected}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {rejected > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                            <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={20} />
+                            <div>
+                                <h4 className="font-bold text-red-700">Perhatian: Ada Laporan Ditolak</h4>
+                                <p className="text-sm text-red-600 mt-1">
+                                    Anda memiliki {rejected} laporan yang ditolak oleh admin. Silakan cek menu <b>Riwayat Laporan</b> untuk melihat catatan revisi dan melakukan perbaikan.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 2. School Submit Form
+        const SchoolSubmitForm = ({ user, api, setView }) => {
+            const [formData, setFormData] = useState({
+                month: 'Januari',
+                year: new Date().getFullYear().toString(),
+                link: ''
+            });
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.link.startsWith('http')) return alert('Link Google Drive harus valid (awalan http/https)');
+
+                setLoading(true);
+                try {
+                    const payload = {
+                        npsn: user.data.npsn,
+                        school_name: user.data.name,
+                        type: 'Laporan Bulanan',
+                        ...formData
+                    };
+                    await api.submitReport(payload);
+                    alert('Laporan berhasil dikirim!');
+                    window.location.reload(); // Refresh data
+                } catch (error) {
+                    alert('Gagal mengirim laporan');
+                    setLoading(false);
+                }
+            };
+
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+            return (
+                <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800">Kirim Laporan Bulanan</h2>
+                    <Card className="p-8">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Bulan</label>
+                                    <select
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={formData.month}
+                                        onChange={e => setFormData({ ...formData, month: e.target.value })}
+                                    >
+                                        {months.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Tahun</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500"
+                                        value={formData.year}
+                                        readOnly
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Jenis Laporan</label>
+                                <div className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 flex items-center gap-2">
+                                    <FileText size={18} />
+                                    Laporan Bulanan
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Link Google Drive</label>
+                                <input
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    required
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    value={formData.link}
+                                    onChange={e => setFormData({ ...formData, link: e.target.value })}
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Pastikan link Google Drive sudah diatur aksesnya ke "Anyone with the link".</p>
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <Button variant="ghost" onClick={() => setView('dashboard')} className="flex-1">Batal</Button>
+                                <Button type="submit" variant="primary" className="flex-1" disabled={loading}>
+                                    {loading ? 'Mengirim...' : 'Kirim Laporan'}
+                                </Button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
+            );
+        }
+
+        // 3. School History
+        const SchoolHistory = ({ myReports }) => {
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800">Riwayat Laporan</h2>
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-4">Periode</th>
+                                    <th className="px-6 py-4">Tanggal Kirim</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Catatan Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {myReports.length > 0 ? myReports.map(item => (
+                                    <tr key={item.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-4 font-medium">{item.month} {item.year}</td>
+                                        <td className="px-6 py-4 text-slate-600">{item.date}</td>
+                                        <td className="px-6 py-4"><Badge status={item.status} /></td>
+                                        <td className="px-6 py-4 text-slate-600 max-w-xs truncate" title={item.notes}>
+                                            {item.notes || '-'}
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="4" className="px-6 py-8 text-center text-slate-400">Belum ada riwayat laporan</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // 4. School Profile & Change Password
+        const SchoolProfile = ({ user, api }) => {
+            const [passData, setPassData] = useState({ old: '', new: '', confirm: '' });
+            const [loading, setLoading] = useState(false);
+
+            const handlePasswordChange = async (e) => {
+                e.preventDefault();
+                if (passData.new !== passData.confirm) return alert("Konfirmasi password tidak cocok");
+                // Check old password locally for better UX (though ideally backend should check)
+                if (user.data.password !== passData.old) return alert("Password lama salah");
+
+                setLoading(true);
+                try {
+                    await api.changePassword('school', user.data.id, passData.new);
+                    alert("Password berhasil diubah. Silakan login ulang.");
+                    window.location.reload();
+                } catch (e) {
+                    alert("Gagal mengubah password");
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-slate-800">Profil Sekolah</h2>
+                        <Card className="p-6 space-y-4">
+                            <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                                <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-2xl">
+                                    {user.data.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">{user.data.name}</h3>
+                                    <p className="text-slate-500">{user.data.npsn}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between py-2 border-b border-slate-50">
+                                    <span className="text-slate-500">Alamat</span>
+                                    <span className="font-medium">{user.data.address}</span>
+                                </div>
+                                <div className="flex justify-between py-2 border-b border-slate-50">
+                                    <span className="text-slate-500">Status Akun</span>
+                                    <span className="text-teal-600 font-bold">Aktif</span>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-slate-800">Keamanan</h2>
+                        <Card className="p-6">
+                            <h3 className="font-bold mb-4 flex items-center gap-2"><Lock size={18} /> Ganti Password</h3>
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Password Lama</label>
+                                    <input type="password" required className="w-full border rounded-lg px-3 py-2"
+                                        value={passData.old} onChange={e => setPassData({ ...passData, old: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Password Baru</label>
+                                    <input type="password" required className="w-full border rounded-lg px-3 py-2"
+                                        value={passData.new} onChange={e => setPassData({ ...passData, new: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Konfirmasi Password Baru</label>
+                                    <input type="password" required className="w-full border rounded-lg px-3 py-2"
+                                        value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} />
+                                </div>
+                                <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                                    {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
+                                </Button>
+                            </form>
+                        </Card>
+                    </div>
+                </div>
+            );
+        }
+
+        // Mount App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+
+</html>

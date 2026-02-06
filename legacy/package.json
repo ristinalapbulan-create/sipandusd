@@ -1,0 +1,14 @@
+{
+  "name": "si-pandu-sd",
+  "version": "1.0.0",
+  "description": "Si-PANDU SD - Sistem Pemantauan Laporan Bulanan Sekolah Dasar",
+  "scripts": {
+    "dev": "npx live-server --entry-file=Index.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.0"
+  }
+}
