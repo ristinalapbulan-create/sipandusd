@@ -23,6 +23,7 @@ export interface SchoolData {
     photoUrl?: string;
     createdAt?: string;
     updatedAt?: string;
+    [key: string]: any; // Allow other properties
 }
 
 export interface Report {
@@ -36,6 +37,9 @@ export interface Report {
     status: 'pending' | 'approved' | 'rejected';
     date: string;
     notes: string;
+    createdAt?: string;
+    updatedAt?: string;
+    [key: string]: any;
 }
 
 export interface AdminData extends UserData {
