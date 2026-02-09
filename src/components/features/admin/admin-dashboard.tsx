@@ -962,6 +962,16 @@ function AdminSchools({ schools, refresh }: { schools: SchoolData[], refresh: ()
         toast.success(`Selesai! Sukses: ${successCount}, Gagal: ${failCount}`);
     };
 
+    const MUARA_UYA_SCHOOLS = [
+        { name: "SD NEGERI 1 BATU PULUT", npsn: "30303051" },
+        // Added placeholder data to fix build. 
+        // Real data for Muara Uya should be populated here or imported.
+    ];
+
+    // START FIX: Define constant to prevent build error
+    // const MUARA_UYA_SCHOOLS: { name: string; npsn: string }[] = []; 
+    // END FIX
+
     const handleSeedMuaraUya = async () => {
         if (!confirm(`Import ${MUARA_UYA_SCHOOLS.length} sekolah untuk Kec. Muara Uya? Data dengan NPSN sama akan diupdate.`)) return;
         setLoading(true);

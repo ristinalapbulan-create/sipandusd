@@ -17,8 +17,9 @@ const nextConfig: NextConfig = {
     },
   },
   // Allow development access from tunnel
-  allowedDevOrigins: ['fb0fea80a1f08c00-114-123-36-102.serveousercontent.com'],
-  // Cloudflare often needs this to bundle firebase-admin correctly
+  // allowedDevOrigins: ['fb0fea80a1f08c00-114-123-36-102.serveousercontent.com'], -- Removed for Vercel build
+
+  // Vercel handles firebase-admin automatically usually, but keeping serverExternalPackages is fine if needed
   serverExternalPackages: ['firebase-admin'],
 };
 
