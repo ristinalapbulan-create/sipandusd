@@ -8,7 +8,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Si-PANDU SD",
+  title: "Si-PANDU SD - PSD.DISDIKBUD TABALONG",
   description: "Sistem Pelaporan & Arsip Digital Unggulan Sekolah Dasar",
 };
 
