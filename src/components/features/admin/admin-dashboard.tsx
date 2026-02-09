@@ -874,7 +874,9 @@ function AdminArchive({ reports, schools }: { reports: Report[], schools: School
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <Badge variant="approved" className="shadow-none">Disetujui</Badge>
+                                            {item.status === 'approved' && <Badge variant="approved" className="shadow-none">Disetujui</Badge>}
+                                            {item.status === 'pending' && <Badge variant="pending" className="shadow-none">Menunggu</Badge>}
+                                            {item.status === 'rejected' && <Badge variant="destructive" className="shadow-none">Ditolak</Badge>}
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -919,6 +921,46 @@ function AdminSchools({ schools, refresh }: { schools: SchoolData[], refresh: ()
     const filteredSchools = filterKec
         ? schools.filter(s => s.kecamatan === filterKec)
         : schools;
+
+    // Bulk Reset State
+    const [isBulkResetting, setIsBulkResetting] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, success: 0, fail: 0 });
+    const [bulkLogs, setBulkLogs] = useState<string[]>([]);
+    const [showBulkModal, setShowBulkModal] = useState(false);
+
+    const handleBulkReset = async () => {
+        if (!confirm(`PERINGATAN: Aksi ini akan mereset password UNTUK SEMUA ${schools.length} SEKOLAH menjadi NPSN masing-masing.\n\nPastikan tidak ada sekolah yang sedang menggunakan aplikasi.\n\nLanjutkan?`)) return;
+
+        setIsBulkResetting(true);
+        setShowBulkModal(true);
+        setBulkProgress({ current: 0, total: schools.length, success: 0, fail: 0 });
+        setBulkLogs([]);
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < schools.length; i++) {
+            const school = schools[i];
+            setBulkProgress(prev => ({ ...prev, current: i + 1 }));
+
+            try {
+                await firebaseService.resetUserPassword(school.npsn, school.npsn);
+                successCount++;
+            } catch (error: any) {
+                console.error(`Failed to reset ${school.npsn}:`, error);
+                failCount++;
+                setBulkLogs(prev => [`❌ ${school.npsn}: ${error.message}`, ...prev]);
+            }
+
+            setBulkProgress(prev => ({ ...prev, success: successCount, fail: failCount }));
+
+            // Small delay to prevent UI freeze
+            await new Promise(r => setTimeout(r, 50));
+        }
+
+        setIsBulkResetting(false);
+        toast.success(`Selesai! Sukses: ${successCount}, Gagal: ${failCount}`);
+    };
 
     const handleSeedMuaraUya = async () => {
         if (!confirm(`Import ${MUARA_UYA_SCHOOLS.length} sekolah untuk Kec. Muara Uya? Data dengan NPSN sama akan diupdate.`)) return;
@@ -1074,6 +1116,13 @@ function AdminSchools({ schools, refresh }: { schools: SchoolData[], refresh: ()
                         <option value="">Semua Kecamatan</option>
                         {KECAMATAN_LIST.map(k => <option key={k} value={k}>{k}</option>)}
                     </select>
+                    <Button
+                        onClick={handleBulkReset}
+                        variant="destructive"
+                        className="shadow-lg shadow-rose-100 bg-rose-600 hover:bg-rose-700 text-white border-0 mr-2"
+                    >
+                        <Lock size={16} className="mr-2" /> Reset Semua
+                    </Button>
                     <Button onClick={handleAdd} className="shadow-lg shadow-blue-200"><Plus size={16} className="mr-2" /> Tambah</Button>
                 </div>
             </div>
@@ -1116,6 +1165,62 @@ function AdminSchools({ schools, refresh }: { schools: SchoolData[], refresh: ()
                     </table>
                 </div>
             </Card>
+
+            {/* Bulk Reset Progress Modal */}
+            {showBulkModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <Card className="w-full max-w-lg p-6 space-y-6 bg-white shadow-2xl animate-in zoom-in duration-300">
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-bold text-xl text-slate-800">Reset Password Massal</h3>
+                            {!isBulkResetting && (
+                                <button onClick={() => setShowBulkModal(false)}><X size={24} className="text-slate-400 hover:text-slate-600" /></button>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Progress UI */}
+                            <div className="flex justify-between text-sm font-medium text-slate-600">
+                                <span>Proses: {bulkProgress.current} / {bulkProgress.total}</span>
+                                <span>{Math.round((bulkProgress.current / bulkProgress.total) * 100)}%</span>
+                            </div>
+                            <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                                ></div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">{bulkProgress.success}</div>
+                                    <div className="text-xs font-medium text-emerald-700 uppercase">Berhasil</div>
+                                </div>
+                                <div className="p-3 bg-rose-50 rounded-lg border border-rose-100 text-center">
+                                    <div className="text-2xl font-bold text-rose-600">{bulkProgress.fail}</div>
+                                    <div className="text-xs font-medium text-rose-700 uppercase">Gagal</div>
+                                </div>
+                            </div>
+
+                            {/* Error Logs */}
+                            <div className="bg-slate-900 text-slate-300 p-4 rounded-lg font-mono text-xs h-40 overflow-y-auto">
+                                {bulkLogs.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center text-slate-600 italic">Menunggu proses...</div>
+                                ) : (
+                                    bulkLogs.map((log, i) => (
+                                        <div key={i} className="mb-1 border-b border-slate-800 pb-1 last:border-0">{log}</div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <Button onClick={() => setShowBulkModal(false)} disabled={isBulkResetting}>
+                                {isBulkResetting ? 'Sedang Memproses...' : 'Tutup'}
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">

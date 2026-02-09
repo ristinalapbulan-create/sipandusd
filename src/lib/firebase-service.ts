@@ -256,12 +256,26 @@ export const firebaseService = {
     },
 
     resetUserPassword: async (uid: string, newPassword: string) => {
-        const database = ensureDb();
-        const userRef = doc(database, "users", uid);
-        await updateDoc(userRef, {
-            password: newPassword,
-            updatedAt: new Date().toISOString()
+        const { auth } = require("./firebase"); // Dynamic import to avoid cycles/init issues
+        if (!auth.currentUser) throw new Error("Anda harus login sebagai Admin");
+
+        const token = await auth.currentUser.getIdToken();
+
+        const response = await fetch('/api/admin/reset-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ uid, newPassword })
         });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || "Gagal reset password via Server");
+        }
+
+        return result;
     },
 
     deleteUser: async (uid: string) => {

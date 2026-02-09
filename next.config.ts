@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+// Force reload env vars
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
