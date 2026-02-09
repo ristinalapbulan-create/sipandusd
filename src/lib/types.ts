@@ -36,7 +36,7 @@ export interface Report {
     status: 'pending' | 'approved' | 'rejected';
     date: string;
     notes: string;
-    // --- TAMBAHAN UNTUK FIX ERROR DEPLOY ---
+    // INI YANG WAJIB ADA:
     createdAt?: string; 
     updatedAt?: string;
 }
