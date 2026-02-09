@@ -104,33 +104,26 @@ export const firebaseService = {
 
     saveSchool: async (school: Partial<SchoolData>) => {
         const database = ensureDb();
-        // If has ID, update. Else create.
         // If creating, we prefer using NPSN as doc ID if possible, or auto ID.
         // Legacy system uses auto ID usually or ID from Google Sheet.
         // Here we can use NPSN as ID to ensure uniqueness easily or keep auto-ID.
         // Sync used NPSN as ID. So let's try to stick to that.
 
-        let docRef;
-        if (school.id) {
-            // Update existing by Document ID (which might be NPSN or AutoID)
-            docRef = doc(database, "schools", school.id);
-            await updateDoc(docRef, { ...school, updatedAt: new Date().toISOString() });
-            return school.id;
+        // Simplified Logic: Always use setDoc with merge.
+        // IF ID exists, use it. IF NPSN exists, use it as ID. Else auto-ID.
+
+        const id = school.id || school.npsn;
+
+        if (id) {
+            const docRef = doc(database, "schools", id);
+            // Use setDoc with merge: true to Create OR Update
+            await setDoc(docRef, { ...school, id, updatedAt: new Date().toISOString() }, { merge: true });
+            return id;
         } else {
-            // New School
-            // We can use NPSN as ID if provided
-            if (school.npsn) {
-                // Check if exists? setDoc will overwrite.
-                // Use setDoc to force ID = NPSN
-                docRef = doc(database, "schools", school.npsn);
-                await setDoc(docRef, { ...school, createdAt: new Date().toISOString(), id: school.npsn }); // Store ID inside data too
-                return school.npsn;
-            } else {
-                // Fallback to auto ID
-                const schoolsRef = collection(database, "schools");
-                const res = await addDoc(schoolsRef, { ...school, createdAt: new Date().toISOString() });
-                return res.id;
-            }
+            // Fallback if absolutely no ID/NPSN (shouldn't happen for valid schools)
+            const schoolsRef = collection(database, "schools");
+            const res = await addDoc(schoolsRef, { ...school, createdAt: new Date().toISOString() });
+            return res.id;
         }
     },
 
