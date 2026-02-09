@@ -11,25 +11,27 @@ import { SchoolDashboard } from "@/components/features/school/school-dashboard";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
     const router = useRouter();
     const [currentView, setCurrentView] = useState('monitoring'); // Default for admin
 
     useEffect(() => {
-        if (!user) {
+        if (!isLoading && !user) {
             router.push('/');
-        } else {
+        } else if (user) {
             // Set default view based on role
             if (user.role === 'school') setCurrentView('dashboard');
             else setCurrentView('monitoring');
         }
-    }, [user, router]);
+    }, [user, isLoading, router]);
 
-    if (!user) return (
+    if (isLoading) return (
         <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="animate-spin text-blue-600" size={48} />
         </div>
     );
+
+    if (!user) return null; // Should redirect by now
 
     return (
         <div className="min-h-screen flex flex-col text-slate-800 bg-slate-50">

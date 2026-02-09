@@ -6,8 +6,10 @@ export interface User {
 }
 
 export interface UserData {
+    id?: string;
     username: string;
     name: string;
+    photoUrl?: string;
 }
 
 export interface SchoolData {

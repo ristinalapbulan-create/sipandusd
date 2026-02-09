@@ -37,7 +37,7 @@ export function Header({ onLoginClick }: HeaderProps) {
                             <div className="flex items-center gap-3 text-right">
                                 <div className="hidden sm:block">
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{user.role === 'school' ? 'Kepala Sekolah' : user.data.name}</p>
-                                    <p className="text-sm font-semibold text-slate-800">{user.role === 'school' ? user.data.name : 'Bidang Pendidikan SD'}</p>
+                                    <p className="text-sm font-semibold text-slate-800">{user.role === 'school' ? user.data.name : 'Bidang Pembinaan SD'}</p>
                                 </div>
                                 <div className="h-10 w-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
                                     {(user.data as any).photoUrl ? (
@@ -47,17 +47,17 @@ export function Header({ onLoginClick }: HeaderProps) {
                                     )}
                                 </div>
                             </div>
-                            <Button onClick={logout} className="!px-4 !py-2 bg-red-600 hover:bg-red-700 text-white font-medium shadow-md shadow-red-100 transition-all">
-                                <LogOut size={16} className="mr-2" />
-                                Keluar
+                            <Button onClick={logout} className="!px-3 !py-2 sm:!px-4 bg-red-600 hover:bg-red-700 text-white font-medium shadow-md shadow-red-100 transition-all">
+                                <LogOut size={18} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Keluar</span>
                             </Button>
                         </div>
                     ) : (
-                        <div className="hidden sm:block">
+                        <div>
                             {onLoginClick && (
-                                <Button onClick={onLoginClick} className="shadow-md hover:shadow-lg transition-shadow">
-                                    <LogIn size={18} className="mr-2" />
-                                    Masuk Aplikasi
+                                <Button onClick={onLoginClick} className="shadow-md hover:shadow-lg transition-shadow !px-3 sm:!px-4">
+                                    <LogIn size={20} className="sm:mr-2" />
+                                    <span className="hidden sm:inline">Masuk</span>
                                 </Button>
                             )}
                         </div>

@@ -48,7 +48,7 @@ export function Sidebar({ currentView, setView }: SidebarProps) {
     return (
         <aside className={cn(
             "bg-white/80 backdrop-blur-xl border-r border-slate-200/60 sticky top-20 h-[calc(100vh-80px)] transition-all duration-300 z-40 hidden md:flex flex-col shadow-sm",
-            isCollapsed ? "w-20" : "w-72"
+            isCollapsed ? "w-20" : "w-56"
         )}>
             {/* Top Collapse Toggle */}
             <div className="p-4 border-b border-slate-100 flex justify-center items-center">
@@ -68,10 +68,12 @@ export function Sidebar({ currentView, setView }: SidebarProps) {
             <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
                 {user.role === 'admin' ? (
                     <>
-                        <SidebarItem icon={LayoutDashboard} label="Monitoring Dashboard" id="monitoring" active={currentView === 'monitoring'} />
-                        <SidebarItem icon={CheckCircle} label="Verifikasi Laporan" id="verification" active={currentView === 'verification'} />
+                        <SidebarItem icon={LayoutDashboard} label="Dashboard" id="monitoring" active={currentView === 'monitoring'} />
+                        <SidebarItem icon={CheckCircle} label="Verifikasi" id="verification" active={currentView === 'verification'} />
                         <SidebarItem icon={FileText} label="Arsip Digital" id="archive" active={currentView === 'archive'} />
                         <SidebarItem icon={Building2} label="Data Sekolah" id="schools" active={currentView === 'schools'} />
+                        <div className="my-2 border-t border-slate-100 mx-2"></div>
+                        <SidebarItem icon={ShieldCheck} label="Pengaturan" id="settings" active={currentView === 'settings'} />
                     </>
                 ) : (
                     <>
@@ -114,6 +116,7 @@ export function MobileNav({ currentView, setView }: SidebarProps) {
                     <NavItem icon={CheckCircle} label="Verifikasi" id="verification" active={currentView === 'verification'} />
                     <NavItem icon={FileText} label="Arsip" id="archive" active={currentView === 'archive'} />
                     <NavItem icon={Building2} label="Sekolah" id="schools" active={currentView === 'schools'} />
+                    <NavItem icon={ShieldCheck} label="Settings" id="settings" active={currentView === 'settings'} />
                 </>
             ) : (
                 <>

@@ -1,6 +1,6 @@
 export function Footer() {
     return (
-        <footer className="bg-slate-900 text-slate-300 pt-8 pb-24 md:pb-8 mt-auto">
+        <footer className="bg-slate-900 text-slate-300 pt-8 pb-24 md:py-8 mt-auto border-t border-slate-800">
             <div className="max-w-7xl mx-auto px-4 text-center flex flex-col items-center">
                 <img
                     src="/tabalong-smart.png"
