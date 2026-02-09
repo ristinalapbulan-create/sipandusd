@@ -15,7 +15,7 @@ export interface UserData {
 export interface SchoolData {
     id: string;
     npsn: string;
-    password?: string; // Should be handled carefully
+    password?: string;
     name: string;
     address: string;
     kecamatan: string;
@@ -36,6 +36,9 @@ export interface Report {
     status: 'pending' | 'approved' | 'rejected';
     date: string;
     notes: string;
+    // --- TAMBAHAN UNTUK FIX ERROR DEPLOY ---
+    createdAt?: string; 
+    updatedAt?: string;
 }
 
 export interface AdminData extends UserData {
