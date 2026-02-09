@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
   },
   // Allow development access from tunnel
   allowedDevOrigins: ['fb0fea80a1f08c00-114-123-36-102.serveousercontent.com'],
+  // Cloudflare often needs this to bundle firebase-admin correctly
+  serverExternalPackages: ['firebase-admin'],
 };
 
 export default nextConfig;

@@ -21,6 +21,8 @@ export interface SchoolData {
     kecamatan: string;
     phoneNumber?: string;
     photoUrl?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Report {
