@@ -154,7 +154,8 @@ function AdminMonitoring({ reports, schools }: { reports: Report[], schools: Sch
             // Only care about speed if 100%? Or generally? 
             // "Rank harus realtime sekolah dikecamatan yg tercepat mengumpul dan duluan 100%"
             // Implies: 100% districts sorted by who finished first. < 100% sorted by %.
-            const dates = districtReports.map(r => new Date(r.createdAt || r.date).getTime());
+            // @ts-ignore
+const dates = districtReports.map((r: any) => new Date(r.createdAt || r.date).getTime());
             latestTime = Math.max(...dates, 0);
         }
 
