@@ -66,7 +66,7 @@ export function Sidebar({ currentView, setView }: SidebarProps) {
             </div>
 
             <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
-                {user.role === 'admin' ? (
+                {user.role === 'admin' && (
                     <>
                         <SidebarItem icon={LayoutDashboard} label="Dashboard" id="monitoring" active={currentView === 'monitoring'} />
                         <SidebarItem icon={CheckCircle} label="Verifikasi" id="verification" active={currentView === 'verification'} />
@@ -75,7 +75,15 @@ export function Sidebar({ currentView, setView }: SidebarProps) {
                         <div className="my-2 border-t border-slate-100 mx-2"></div>
                         <SidebarItem icon={ShieldCheck} label="Pengaturan" id="settings" active={currentView === 'settings'} />
                     </>
-                ) : (
+                )}
+                {user.role === 'korwil' && (
+                    <>
+                        <SidebarItem icon={LayoutDashboard} label="Dashboard" id="monitoring" active={currentView === 'monitoring'} />
+                        <SidebarItem icon={FileText} label="Arsip Digital" id="archive" active={currentView === 'archive'} />
+                        <SidebarItem icon={ShieldCheck} label="Profil" id="profile" active={currentView === 'profile'} />
+                    </>
+                )}
+                {user.role === 'school' && (
                     <>
                         <SidebarItem icon={LayoutDashboard} label="Dashboard" id="dashboard" active={currentView === 'dashboard'} />
                         <SidebarItem icon={UploadCloud} label="Kirim Laporan" id="submit" active={currentView === 'submit'} />
@@ -110,7 +118,7 @@ export function MobileNav({ currentView, setView }: SidebarProps) {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-4 py-2 md:hidden flex justify-around items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
-            {user.role === 'admin' ? (
+            {user.role === 'admin' && (
                 <>
                     <NavItem icon={LayoutDashboard} label="Monitor" id="monitoring" active={currentView === 'monitoring'} />
                     <NavItem icon={CheckCircle} label="Verifikasi" id="verification" active={currentView === 'verification'} />
@@ -118,7 +126,15 @@ export function MobileNav({ currentView, setView }: SidebarProps) {
                     <NavItem icon={Building2} label="Sekolah" id="schools" active={currentView === 'schools'} />
                     <NavItem icon={ShieldCheck} label="Settings" id="settings" active={currentView === 'settings'} />
                 </>
-            ) : (
+            )}
+            {user.role === 'korwil' && (
+                <>
+                    <NavItem icon={LayoutDashboard} label="Monitor" id="monitoring" active={currentView === 'monitoring'} />
+                    <NavItem icon={FileText} label="Arsip" id="archive" active={currentView === 'archive'} />
+                    <NavItem icon={ShieldCheck} label="Profil" id="profile" active={currentView === 'profile'} />
+                </>
+            )}
+            {user.role === 'school' && (
                 <>
                     <NavItem icon={LayoutDashboard} label="Home" id="dashboard" active={currentView === 'dashboard'} />
                     <NavItem icon={UploadCloud} label="Kirim" id="submit" active={currentView === 'submit'} />

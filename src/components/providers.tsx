@@ -71,8 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 const userData = userDoc.data();
                                 const isMainAdmin = email === "admin@sipandu.com" || email.startsWith("admin@");
 
+                                // Treat users with role 'korwil' appropriately
+                                const determinedRole = isMainAdmin ? 'admin' : (userData.role || 'school');
+
                                 setUser({
-                                    role: isMainAdmin ? 'admin' : (userData.role || 'school'),
+                                    role: determinedRole,
                                     data: { ...userData, id: firebaseUser.uid }
                                 } as User);
                                 userFound = true;
@@ -124,9 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newUser);
     };
 
-    const updateUser = (data: Partial<User['data']>) => {
+    const updateUser = (data: any) => {
         if (user) {
-            setUser({ ...user, data: { ...user.data, ...data } });
+            setUser({ ...user, data: { ...user.data, ...data } } as User);
             // TODO: Update Firestore document here
         }
     };

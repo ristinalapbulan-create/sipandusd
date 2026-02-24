@@ -1,0 +1,10 @@
+﻿next.config.ts(24,3): error TS2353: Object literal may only specify known properties, and 'eslint' does not exist in type 'NextConfig'.
+src/components/features/admin/admin-dashboard.tsx(1272,1): error TS1184: Modifiers cannot appear here.
+src/components/features/admin/admin-dashboard.tsx(1297,49): error TS2339: Property 'getUsersByRole' does not exist on type '{ getReports: (userRole: string, userId: string, npsn?: string | undefined) => Promise<Report[]>; submitReport: (report: Report) => Promise<string>; ... 11 more ...; deleteUser: (uid: string) => Promise<...>; }'.
+src/components/features/admin/admin-dashboard.tsx(1319,35): error TS2339: Property 'createKorwilAccount' does not exist on type '{ getReports: (userRole: string, userId: string, npsn?: string | undefined) => Promise<Report[]>; submitReport: (report: Report) => Promise<string>; ... 11 more ...; deleteUser: (uid: string) => Promise<...>; }'.
+src/components/features/admin/chart-views.tsx(92,69): error TS2339: Property 'activePayload' does not exist on type 'Props'.
+src/components/features/admin/chart-views.tsx(92,91): error TS2339: Property 'activePayload' does not exist on type 'Props'.
+src/components/features/admin/chart-views.tsx(93,58): error TS2339: Property 'activePayload' does not exist on type 'Props'.
+src/components/features/admin/firebase-sync.tsx(31,49): error TS2339: Property 'syncSchools' does not exist on type '{ getReports: (userRole: string, userId: string, npsn?: string | undefined) => Promise<Report[]>; submitReport: (report: Report) => Promise<string>; ... 11 more ...; deleteUser: (uid: string) => Promise<...>; }'.
+src/components/features/admin/seeding-tool.tsx(143,35): error TS2339: Property 'ensureAdminUser' does not exist on type '{ getReports: (userRole: string, userId: string, npsn?: string | undefined) => Promise<Report[]>; submitReport: (report: Report) => Promise<string>; ... 11 more ...; deleteUser: (uid: string) => Promise<...>; }'.
+src/components/features/admin/seeding-tool.tsx(172,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'SetStateAction<"Kec. Banua Lawas">'.

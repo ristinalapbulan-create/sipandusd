@@ -28,7 +28,7 @@ export function LandingPage() {
     const currentMonthIndex = new Date().getMonth();
     const currentMonth = MONTHS[currentMonthIndex];
 
-    const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+    const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
     const [selectedYear, setSelectedYear] = useState(currentYear);
 
     // Derived Stats State
@@ -145,11 +145,11 @@ export function LandingPage() {
                 percent = (rawPercent > 0 && rawPercent < 1) ? parseFloat(rawPercent.toFixed(1)) : Math.round(rawPercent);
             }
 
-            // Speed Tie-Breaker: Find latest submission time if 100%
+            // Speed Tie-Breaker: Find latest submission time if we have reports
             let latestTime = 0;
-            if (percent === 100) {
-                // Use r.date as fallback
-                const dates = districtReports.map(r => new Date(r.date).getTime());
+            if (districtReportedCount > 0) {
+                // Use r.createdAt or r.date as fallback
+                const dates = districtReports.map(r => new Date(r.createdAt || r.date).getTime());
                 latestTime = Math.max(...dates, 0);
             }
 
@@ -165,8 +165,8 @@ export function LandingPage() {
         }).sort((a, b) => {
             // Priority 1: Percentage Descending
             if (b.percent !== a.percent) return b.percent - a.percent;
-            // Priority 2: Speed Ascending (Earlier is better) for 100% completion
-            if (a.percent === 100 && b.percent === 100) return a.latestTime - b.latestTime;
+            // Priority 2: Speed Ascending (Earlier is better) for tied percentages > 0
+            if (a.percent > 0 && b.percent === a.percent) return a.latestTime - b.latestTime;
             // Priority 3: Name Ascending
             return a.kec.localeCompare(b.kec);
         });

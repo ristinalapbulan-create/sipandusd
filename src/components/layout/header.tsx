@@ -36,8 +36,12 @@ export function Header({ onLoginClick }: HeaderProps) {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-3 text-right">
                                 <div className="hidden sm:block">
-                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{user.role === 'school' ? 'Kepala Sekolah' : user.data.name}</p>
-                                    <p className="text-sm font-semibold text-slate-800">{user.role === 'school' ? user.data.name : 'Bidang Pembinaan SD'}</p>
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                                        {user.role === 'school' ? 'Kepala Sekolah' : user.role === 'korwil' ? 'Koordinator Wilayah' : user.data.name}
+                                    </p>
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        {user.role === 'school' ? user.data.name : user.role === 'korwil' ? `Korwil Kecamatan` : 'Bidang Pembinaan SD'}
+                                    </p>
                                 </div>
                                 <div className="h-10 w-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
                                     {(user.data as any).photoUrl ? (

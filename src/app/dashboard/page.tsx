@@ -8,6 +8,7 @@ import { Sidebar, MobileNav } from "@/components/layout/sidebar";
 import { Footer } from "@/components/layout/footer";
 import { AdminDashboard } from "@/components/features/admin/admin-dashboard";
 import { SchoolDashboard } from "@/components/features/school/school-dashboard";
+import { KorwilDashboard } from "@/components/features/korwil/korwil-dashboard";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -41,9 +42,13 @@ export default function DashboardPage() {
                 <Sidebar currentView={currentView} setView={setCurrentView} />
 
                 <main className="flex-1 p-6 overflow-x-hidden">
-                    {user.role === 'admin' ? (
+                    {user.role === 'admin' && (
                         <AdminDashboard view={currentView} />
-                    ) : (
+                    )}
+                    {user.role === 'korwil' && (
+                        <KorwilDashboard view={currentView} />
+                    )}
+                    {user.role === 'school' && (
                         <SchoolDashboard view={currentView} setView={setCurrentView} />
                     )}
                 </main>

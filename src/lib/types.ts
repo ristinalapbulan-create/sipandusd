@@ -1,8 +1,8 @@
-export type UserRole = 'admin' | 'school';
+export type UserRole = 'admin' | 'school' | 'korwil';
 
 export interface User {
     role: UserRole;
-    data: UserData | SchoolData;
+    data: UserData | SchoolData | KorwilData;
 }
 
 export interface UserData {
@@ -44,4 +44,9 @@ export interface Report {
 
 export interface AdminData extends UserData {
     // specific admin fields
+}
+
+export interface KorwilData extends UserData {
+    kecamatan: string[]; // Array to support multiple districts
+    // specific korwil fields
 }

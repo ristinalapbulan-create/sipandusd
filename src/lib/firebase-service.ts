@@ -281,5 +281,36 @@ export const firebaseService = {
     deleteUser: async (uid: string) => {
         const database = ensureDb();
         await require("firebase/firestore").deleteDoc(doc(database, "users", uid));
+    },
+
+    getUsersByRole: async (role: string) => {
+        const database = ensureDb();
+        const usersRef = collection(database, "users");
+        const q = query(usersRef, where("role", "==", role));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    createKorwilAccount: async (email: string, password: string, name: string, kecamatan: string[]) => {
+        const database = ensureDb();
+        const { auth } = require("./firebase"); // Dynamic import for auth
+        if (!auth.currentUser) throw new Error("Harus login sebagai Admin");
+
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch('/api/admin/create-korwil', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email, password, name, kecamatan })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || "Gagal membuat akun server-side");
+        }
+
+        return result;
     }
 };

@@ -1,0 +1,8 @@
+Line 30 open: 0 -> export function AdminDashboard({ view }: AdminDashboardProps) {
+Line 81 open: 1 -> function AdminMonitoring({ reports, schools }: { reports: Report[], schools: SchoolData[] }) {
+Line 447 open: 1 -> function AdminVerification({reports, schools, refresh}: {reports: Report[], schools: SchoolData[], refresh: () => void }) {
+Line 595 open: 1 -> function UnreportedModal({isOpen, onClose, schools, reports, selectedMonth, selectedYear}: UnreportedModalProps) {
+Line 675 open: 1 -> function AdminArchive({reports, schools}: {reports: Report[], schools: SchoolData[] }) {
+Line 904 open: 1 -> function AdminSchools({schools, refresh}: {schools: SchoolData[], refresh: () => void }) {
+Line 1270 open: 2 -> export function AdminSettings({ refresh }: { refresh?: () => void }) {
+Final open count: 2

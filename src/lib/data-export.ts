@@ -2,6 +2,21 @@ import { firebaseService } from "./firebase-service";
 import * as XLSX from 'xlsx';
 import { Report, SchoolData } from "./types";
 
+const EXPORT_MONTHS = [
+    { value: '01', label: 'Januari' },
+    { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' },
+    { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' },
+    { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'Desember' }
+];
+
 export const backupDatabase = async () => {
     try {
         const [reports, schools] = await Promise.all([
@@ -34,17 +49,16 @@ export const backupDatabase = async () => {
     }
 };
 
-export const exportReportsToExcel = (reports: Report[], schools: SchoolData[], month: string, year: string) => {
+export const exportReportsToExcel = (
+    reports: Report[],
+    schools: SchoolData[],
+    month: string,
+    year: string,
+    role: 'admin' | 'korwil' | 'school' = 'admin',
+    wilayahName: string = ''
+) => {
     try {
-        // 1. Prepare Data
-        // Filter reports by the SELECTED month/year if provided.
-        // If "All Months" (empty string), we show all? 
-        // The user format says "BULAN : ..." so it implies a specific month report.
-        // If multiple months selected, maybe we shouldn't force one.
-        // But usually Recaps are per period. 
-        // If month is empty, we'll label it "SEMUA BULAN".
-
-        const displayMonth = month || "SEMUA BULAN";
+        const displayMonthLabel = month ? (EXPORT_MONTHS.find(m => m.value === month || m.value.padStart(2, '0') === month)?.label || month) : "SEMUA BULAN";
         const displayYear = year || "SEMUA TAHUN";
 
         // Sort schools by Kecamatan then Name
@@ -60,10 +74,17 @@ export const exportReportsToExcel = (reports: Report[], schools: SchoolData[], m
 
         // --- HEADER ---
         wsData.push(["REKAPITULASI LAPORAN BULANAN SEKOLAH"]);
-        wsData.push(["BIDANG PEMBINAAN SD"]);
-        wsData.push(["DINAS PENDIDIKAN DAN KEBUDAYAAN KAB. TABALONG"]);
+
+        if (role === 'korwil') {
+            wsData.push([`KORWIL ${wilayahName.toUpperCase()}`]);
+            wsData.push(["DINAS PENDIDIKAN DAN KEBUDAYAAN KAB. TABALONG"]);
+        } else {
+            wsData.push(["BIDANG PEMBINAAN SD"]);
+            wsData.push(["DINAS PENDIDIKAN DAN KEBUDAYAAN KAB. TABALONG"]);
+        }
+
         wsData.push([""]); // Spacer
-        wsData.push(["BULAN", ": " + displayMonth]);
+        wsData.push(["BULAN", ": " + displayMonthLabel]);
         wsData.push(["TAHUN", ": " + displayYear]);
         wsData.push([""]); // Spacer
 
@@ -167,7 +188,7 @@ export const exportReportsToExcel = (reports: Report[], schools: SchoolData[], m
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap");
 
-        const filename = `rekap-laporan-${displayMonth}-${displayYear}-${new Date().toISOString().split('T')[0]}.xlsx`;
+        const filename = `rekap-laporan-${displayMonthLabel}-${displayYear}-${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(workbook, filename);
 
         return { success: true };

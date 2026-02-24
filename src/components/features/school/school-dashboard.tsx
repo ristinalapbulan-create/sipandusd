@@ -247,11 +247,12 @@ function SchoolSubmitForm({ user, setView, refresh }: any) {
                                 <AlertCircle size={16} /> Panduan Upload Laporan:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-1 text-blue-700">
+                                <li>File yang diupload harus berupa <strong>Laporan Bulanan</strong> dalam format <strong>PDF</strong>.</li>
                                 <li>Simpan file laporan di Google Drive sekolah.</li>
                                 <li>Buat folder arsip berdasarkan <strong>Tahun</strong> agar rapi (Contoh: <code>Arsip 2026</code>).</li>
                                 <li>Pastikan akses link diatur ke <strong>"Siapa saja yang memiliki link" (Public/Anyone with the link)</strong> agar Admin Dinas bisa membuka.</li>
                                 <li>Pastikan hasil scan <strong>jelas</strong>, sudah <strong>ditandatangani</strong>, dan <strong>distempel</strong> (basah/digital).</li>
-                                <li>Salin <strong>link file</strong> (bukan link folder) dan tempel di kolom bawah ini.</li>
+                                <li>Salin <strong>link file</strong> (bukan link folder) dan tempel di kolom bawah ini. Tautan yang dikumpulkan <strong>harus link dari Google Drive</strong>, link selain dari Drive tidak bisa dimasukkan.</li>
                             </ul>
                         </div>
 
