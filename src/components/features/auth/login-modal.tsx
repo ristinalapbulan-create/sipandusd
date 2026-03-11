@@ -86,7 +86,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${loginType === 'school' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             onClick={() => {
                                 setLoginType('school');
-                                setCredentials({ username: '', password: '' }); // Reset inputan saat pindah tab
+                                setCredentials({ username: '', password: '' }); // Reset inputan saat pindah tab y
                                 setError('');
                             }}
                             type="button"
