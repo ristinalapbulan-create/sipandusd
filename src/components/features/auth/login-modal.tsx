@@ -20,7 +20,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     
     const [loginType, setLoginType] = useState<UserRole>('school');
     const [credentials, setCredentials] = useState({ username: '', password: '' });
-    const [error, setError] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
@@ -28,7 +28,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setErrorMsg('');
 
         try {
             const emailDomain = "@sipandu.com";
@@ -37,24 +37,24 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 ? inputUsername
                 : `${inputUsername}${emailDomain}`;
 
-            // Langsung eksekusi Login menggunakan password yang diketik pengguna
             await signInWithEmailAndPassword(auth, email, credentials.password);
             
             toast.success(`Selamat datang!`);
             onClose();
             router.push('/dashboard'); 
 
-        } catch (err: any) {
+        } catch (error) {
             const err = error as any;
             console.error(err);
+            
             if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-                setError("Kredensial salah. Periksa kembali NPSN/Username dan Password Anda.");
+                setErrorMsg("Kredensial salah. Periksa kembali NPSN/Username dan Password Anda.");
             } else if (err.code === 'auth/user-not-found') {
-                setError("Akun tidak ditemukan. Silakan hubungi Admin Dinas.");
+                setErrorMsg("Akun tidak ditemukan. Silakan hubungi Admin Dinas.");
             } else if (err.code === 'auth/too-many-requests') {
-                setError("Terlalu banyak percobaan. Silakan coba lagi nanti.");
+                setErrorMsg("Terlalu banyak percobaan. Silakan coba lagi nanti.");
             } else {
-                setError("Error: Gagal masuk. Periksa koneksi Anda.");
+                setErrorMsg("Error: Gagal masuk. Periksa koneksi Anda.");
             }
         } finally {
             setLoading(false);
@@ -87,8 +87,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${loginType === 'school' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             onClick={() => {
                                 setLoginType('school');
-                                setCredentials({ username: '', password: '' }); // Reset inputan saat pindah tab y
-                                setError('');
+                                setCredentials({ username: '', password: '' }); 
+                                setErrorMsg('');
                             }}
                             type="button"
                         >
@@ -98,8 +98,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${loginType === 'admin' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             onClick={() => {
                                 setLoginType('admin');
-                                setCredentials({ username: '', password: '' }); // Reset inputan saat pindah tab
-                                setError('');
+                                setCredentials({ username: '', password: '' }); 
+                                setErrorMsg('');
                             }}
                             type="button"
                         >
@@ -108,9 +108,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     </div>
 
                     <form onSubmit={handleAuth} className="space-y-4">
-                        {error && (
+                        {errorMsg && (
                             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
-                                <AlertCircle size={16} /> {error}
+                                <AlertCircle size={16} /> {errorMsg}
                             </div>
                         )}
 
@@ -130,8 +130,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                             <Input
                                 type="password"
-                                required  // <-- Wajib diisi untuk semua pengguna (Sekolah & Dinas)
-                                placeholder="Masukkan password" // <-- Teks petunjuk dikembalikan standar
+                                required
+                                placeholder="Masukkan password"
                                 value={credentials.password}
                                 onChange={e => setCredentials({ ...credentials, password: e.target.value })}
                             />
