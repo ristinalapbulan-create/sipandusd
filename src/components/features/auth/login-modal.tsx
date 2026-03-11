@@ -45,6 +45,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             router.push('/dashboard'); 
 
         } catch (err: any) {
+            const err = error as any;
             console.error(err);
             if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
                 setError("Kredensial salah. Periksa kembali NPSN/Username dan Password Anda.");
